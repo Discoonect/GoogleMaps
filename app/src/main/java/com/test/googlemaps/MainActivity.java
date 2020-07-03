@@ -49,6 +49,9 @@ public class MainActivity extends AppCompatActivity {
 
     boolean isFirst = true;
 
+    String pageToken= "";
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -91,6 +94,33 @@ public class MainActivity extends AppCompatActivity {
 
             }
         };
+
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+            }
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+
+                int lastPosition = (((LinearLayoutManager) recyclerView.getLayoutManager()).findLastCompletelyVisibleItemPosition())+1;
+                int totalCount = recyclerView.getAdapter().getItemCount();
+
+                if(lastPosition == totalCount){
+                    Log.i("AAA","마지막");
+
+                    if (nextPageToken.compareTo(pageToken)!=0) {
+                        pageToken = nextPageToken;
+
+
+                        addNetworkData(lat,lng);
+                    }
+                }
+            }
+        });
+
+
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(MainActivity.this,
@@ -176,4 +206,51 @@ public class MainActivity extends AppCompatActivity {
                         });
         requestQueue.add(jsonObjectRequest);
     }
+
+
+    public void addNetworkData(double lat, double lng){
+
+        String url = baseUrl+"&location="+lat+","+lng;
+
+        JsonObjectRequest jsonObjectRequest =
+                new JsonObjectRequest(Request.Method.GET,
+                        url,
+                        null,
+                        new Response.Listener<JSONObject>() {
+                            @Override
+                            public void onResponse(JSONObject response) {
+                                Log.i("AAA",response.toString());
+                                try {
+                                    String nextpagetoken = response.getString("next_page_token");
+                                    JSONArray jsonArray = response.getJSONArray("results");
+                                    for(int i=0; i<jsonArray.length(); i++){
+                                        JSONObject jsonObject = jsonArray.getJSONObject(i);
+                                        String name = jsonObject.getString("name");
+                                        String vicinity = jsonObject.getString("vicinity");
+                                        JSONObject geometry = jsonObject.getJSONObject("geometry");
+                                        JSONObject location = geometry.getJSONObject("location");
+
+                                        double storeLat = location.getDouble("lat");
+                                        double storeLng = location.getDouble("lng");
+
+                                        Results results = new Results(name,vicinity,storeLat,storeLng);
+                                        resultsList.add(results);
+                                    }
+                                    recyclerViewAdapter.notifyDataSetChanged();
+
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        },
+                        new Response.ErrorListener() {
+                            @Override
+                            public void onErrorResponse(VolleyError error) {
+
+                            }
+                        });
+        requestQueue.add(jsonObjectRequest);
+    }
+
+
 }
