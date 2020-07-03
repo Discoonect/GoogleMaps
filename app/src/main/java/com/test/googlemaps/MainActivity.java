@@ -32,7 +32,7 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
-    private String baseUrl = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?language=ko&location=37.544147,126.8357822&radius=2000&type=restaurant&key=AIzaSyB6MGXsA05A43EkIjfgv4RRh2zawJRjFPY";
+    private String baseUrl = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?language=ko&radius=20000&type=restaurant&key=AIzaSyB6MGXsA05A43EkIjfgv4RRh2zawJRjFPY";
 
     private LocationManager locationManager;
     private LocationListener locationListener;
@@ -47,12 +47,16 @@ public class MainActivity extends AppCompatActivity {
     double lat;
     double lng;
 
+    boolean isFirst = true;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         recyclerView = findViewById(R.id.recyclerView);
+
+
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
 
@@ -65,9 +69,11 @@ public class MainActivity extends AppCompatActivity {
                 Log.i("AAA",location.toString());
                 lat = location.getLatitude();
                 lng = location.getLongitude();
-                String url = baseUrl+"&location="+lat+","+lng;
 
-
+                if(isFirst) {
+                    isFirst = false;
+                    getNetworkData(lat, lng);
+                }
             }
 
             @Override
@@ -86,25 +92,10 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        getNetworkData(baseUrl);
-
-
-
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-
-            // 유저한테, 이 앱은 위치기반 권한이 있어야 한다고 알려야 한다.
-            // 유저가 권한 설정을 하고 나면, 처리해야 할 코드를 작성하기 위해서,
-            // requestCode 값을 설정한다.
             ActivityCompat.requestPermissions(MainActivity.this,
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION,
                             Manifest.permission.ACCESS_COARSE_LOCATION}, 0);
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
             return;
         }
         locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
@@ -112,7 +103,6 @@ public class MainActivity extends AppCompatActivity {
                 0,   // 미터   10m
                 locationListener);
         }
-
 
 
     @Override
@@ -139,7 +129,12 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    public void getNetworkData(String url){
+
+
+    public void getNetworkData(double lat, double lng){
+
+        String url = baseUrl+"&location="+lat+","+lng;
+
         JsonObjectRequest jsonObjectRequest =
                 new JsonObjectRequest(Request.Method.GET,
                         url,
@@ -150,19 +145,24 @@ public class MainActivity extends AppCompatActivity {
                                 Log.i("AAA",response.toString());
                                 try {
                                     String nextpagetoken = response.getString("next_page_token");
-                                    Log.i("AAA",nextpagetoken);
                                     JSONArray jsonArray = response.getJSONArray("results");
                                     for(int i=0; i<jsonArray.length(); i++){
                                         JSONObject jsonObject = jsonArray.getJSONObject(i);
                                         String name = jsonObject.getString("name");
                                         String vicinity = jsonObject.getString("vicinity");
+                                        JSONObject geometry = jsonObject.getJSONObject("geometry");
+                                        JSONObject location = geometry.getJSONObject("location");
 
-                                        Results results = new Results(name,vicinity);
+                                        double storeLat = location.getDouble("lat");
+                                        double storeLng = location.getDouble("lng");
+
+                                        Results results = new Results(name,vicinity,storeLat,storeLng);
                                         resultsList.add(results);
                                     }
                                     recyclerViewAdapter = new RecyclerViewAdapter(
                                             MainActivity.this,resultsList);
                                     recyclerView.setAdapter(recyclerViewAdapter);
+
                                 } catch (JSONException e) {
                                     e.printStackTrace();
                                 }

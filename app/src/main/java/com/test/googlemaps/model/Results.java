@@ -4,13 +4,18 @@ public class Results {
 
     private String name;
     private String vicinity;
+    private double storeLat;
+    private double storeLng;
+
 
     public Results(){
     }
 
-    public Results(String name, String vicinity) {
+    public Results(String name, String vicinity,double storeLat, double storeLng) {
         this.name = name;
         this.vicinity = vicinity;
+        this.storeLat = storeLat;
+        this.storeLng = storeLng;
     }
 
     public String getName() {
