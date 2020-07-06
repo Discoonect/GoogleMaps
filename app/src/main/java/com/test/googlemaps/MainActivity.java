@@ -2,17 +2,22 @@ package com.test.googlemaps;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 
@@ -30,12 +35,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.net.URL;
 import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
-    private String baseUrl = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?language=ko&radius=20000&type=restaurant&key=AIzaSyB6MGXsA05A43EkIjfgv4RRh2zawJRjFPY";
+    private String baseUrl = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?language=ko&radius=2000&key=AIzaSyB6MGXsA05A43EkIjfgv4RRh2zawJRjFPY";
 
     private LocationManager locationManager;
     private LocationListener locationListener;
@@ -61,11 +65,27 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        Toolbar toolbar = findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+
 
         recyclerView = findViewById(R.id.recyclerView);
 
         editSearch = findViewById(R.id.editSearch);
         btn_search = findViewById(R.id.btn_search);
+
+
+
+        btn_search.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                keyword = editSearch.getText().toString().trim();
+                resultsList.clear();
+                getNetworkData(lat, lng);
+
+            }
+        });
 
         recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
@@ -209,47 +229,49 @@ public class MainActivity extends AppCompatActivity {
             url = baseUrl+"&location="+lat+","+lng+"&keyword="+keyword;
         }
 
-        JsonObjectRequest jsonObjectRequest =
-                new JsonObjectRequest(Request.Method.GET,
-                        url,
-                        null,
-                        new Response.Listener<JSONObject>() {
-                            @Override
-                            public void onResponse(JSONObject response) {
-                                Log.i("AAA",response.toString());
-                                try {
-                                    String nextpagetoken = response.getString("next_page_token");
-                                    JSONArray jsonArray = response.getJSONArray("results");
-                                    for(int i=0; i<jsonArray.length(); i++){
-                                        JSONObject jsonObject = jsonArray.getJSONObject(i);
-                                        String name = jsonObject.getString("name");
-                                        String vicinity = jsonObject.getString("vicinity");
-                                        JSONObject geometry = jsonObject.getJSONObject("geometry");
-                                        JSONObject location = geometry.getJSONObject("location");
-
-                                        double storeLat = location.getDouble("lat");
-                                        double storeLng = location.getDouble("lng");
-
-                                        Results results = new Results(name,vicinity,storeLat,storeLng);
-                                        resultsList.add(results);
-                                    }
-                                    recyclerViewAdapter = new RecyclerViewAdapter(MainActivity.this,
-                                            resultsList);
-                                    recyclerView.setAdapter(recyclerViewAdapter);
-
-
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
-                                }
+        StringRequest request = new StringRequest(
+                Request.Method.GET,
+                url,
+                new Response.Listener<String>() {
+                    @Override
+                    public void onResponse(String response) {
+                        try {
+                            // Exception : 실행도중에 문제가 발생할 경우, catch 에서 처리할 수 있도록
+                            JSONObject jsonObject = new JSONObject(response);
+                            if(!jsonObject.isNull("next_page_token")) {
+                                nextPageToken = jsonObject.getString("next_page_token");
                             }
-                        },
-                        new Response.ErrorListener() {
-                            @Override
-                            public void onErrorResponse(VolleyError error) {
-
+                            JSONArray resultsA = jsonObject.getJSONArray("results");
+                            for(int i = 0; i < resultsA.length(); i++){
+                                JSONObject item = resultsA.getJSONObject(i);
+                                JSONObject geometry = item.getJSONObject("geometry");
+                                JSONObject location = geometry.getJSONObject("location");
+                                double storeLat = location.getDouble("lat");
+                                double storeLng = location.getDouble("lng");
+                                String name = item.getString("name");
+                                String addr = item.getString("vicinity");
+                                Results results = new Results(name, addr, storeLat, storeLng);
+                                resultsList.add(results);
                             }
-                        });
-        requestQueue.add(jsonObjectRequest);
+                            recyclerViewAdapter = new RecyclerViewAdapter(MainActivity.this,
+                                    resultsList);
+                            recyclerView.setAdapter(recyclerViewAdapter);
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                            Log.i("AAA", e.toString());
+                        }
+
+                    }
+                },
+                new Response.ErrorListener() {
+                    @Override
+                    public void onErrorResponse(VolleyError error) {
+
+                    }
+                }
+        );
+        requestQueue.add(request);
     }
 
     @Override
@@ -274,5 +296,25 @@ public class MainActivity extends AppCompatActivity {
                     0,   // 미터   10m
                     locationListener);
         }
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        if(id==R.id.menu_location){
+            Intent i = new Intent(MainActivity.this,MapsActivity.class);
+            i.putExtra("lat",lat);
+            i.putExtra("lng",lng);
+
+            startActivity(i);
+        }
+        return super.onOptionsItemSelected(item);
     }
 }

@@ -1,6 +1,8 @@
 package com.test.googlemaps.model;
 
-public class Results {
+import java.io.Serializable;
+
+public class Results implements Serializable {
 
     private String name;
     private String vicinity;
@@ -11,7 +13,23 @@ public class Results {
     public Results(){
     }
 
-    public Results(String name, String vicinity,double storeLat, double storeLng) {
+    public double getStoreLat() {
+        return storeLat;
+    }
+
+    public void setStoreLat(double storeLat) {
+        this.storeLat = storeLat;
+    }
+
+    public double getStoreLng() {
+        return storeLng;
+    }
+
+    public void setStoreLng(double storeLng) {
+        this.storeLng = storeLng;
+    }
+
+    public Results(String name, String vicinity, double storeLat, double storeLng) {
         this.name = name;
         this.vicinity = vicinity;
         this.storeLat = storeLat;
