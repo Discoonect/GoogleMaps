@@ -39,7 +39,7 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
-    private String baseUrl = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?language=ko&radius=2000&key=AIzaSyB6MGXsA05A43EkIjfgv4RRh2zawJRjFPY";
+    private String baseUrl = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?language=ko&radius=20000&key=AIzaSyB6MGXsA05A43EkIjfgv4RRh2zawJRjFPY";
 
     private LocationManager locationManager;
     private LocationListener locationListener;
@@ -309,10 +309,10 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         if(id==R.id.menu_location){
-            Intent i = new Intent(MainActivity.this,MapsActivity.class);
+            Intent i = new Intent(MainActivity.this,MyMabsActivity.class);
             i.putExtra("lat",lat);
             i.putExtra("lng",lng);
-
+            i.putExtra("resultsList",resultsList);
             startActivity(i);
         }
         return super.onOptionsItemSelected(item);

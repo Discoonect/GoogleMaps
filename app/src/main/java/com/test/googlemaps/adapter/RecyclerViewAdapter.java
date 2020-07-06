@@ -17,13 +17,19 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.load.model.GlideUrl;
 import com.bumptech.glide.load.model.LazyHeaders;
+import com.test.googlemaps.MainActivity;
 import com.test.googlemaps.MapsActivity;
+import com.test.googlemaps.MyMabsActivity;
 import com.test.googlemaps.R;
 import com.test.googlemaps.model.Results;
 
 import java.util.ArrayList;
 
 public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder>{
+
+    double lat;
+    double lng;
+
 
     Context context;
     ArrayList<Results> resultsList;
@@ -78,16 +84,15 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
             cardView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    int index = getAdapterPosition();
-                    Results results = resultsList.get(index);
                     Intent i = new Intent(context, MapsActivity.class);
-                    i.putExtra("results",results);
+
+                    i.putExtra("lat",lat);
+                    i.putExtra("lng",lng);
+                    i.putExtra("resultsList",resultsList);
                     context.startActivity(i);
                 }
             });
-
         }
-
         public void openWebPage(String url){
             Uri webPage = Uri.parse(url);
             Intent i = new Intent(Intent.ACTION_VIEW,webPage);
